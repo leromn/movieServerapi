@@ -1,81 +1,59 @@
 const express = require('express');
-const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
-require('dotenv').config();
-
 const app = express();
+require('./plugs/dbInit').start();
+const models = require('./models/dbModels');
+const PORT = 9090;
 
-const nocache = (_, resp, next) => {
-  resp.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
-  resp.header('Expires', '-1');
-  resp.header('Pragma', 'no-cache');
-  next();
-};
+//   let uid = req.params.uid;
+//   if (!uid || uid === '') {
+//     return resp.status(500).json({ error: 'uid is required' });
+//   }
 
-const generateRTCToken = (req, resp) => {
-  resp.header('Access-Control-Allow-Origin', '*');
+//   let expireTime = req.query.expiry;
 
-  // get channelName
-  const channelName = req.params.channel;
-  if (!channelName) {
-    return resp.status(500).json({ error: 'channel is required' });
-  }
-
-  let uid = req.params.uid;
-  if (!uid || uid === '') {
-    return resp.status(500).json({ error: 'uid is required' });
-  }
-
-  // get role
-  let role;
-  if (req.params.role === 'publisher') {
-    role = RtcRole.PUBLISHER;
-  } else if (req.params.role === 'audience') {
-    role = RtcRole.SUBSCRIBER;
-  } else {
-    return resp.status(500).json({ error: 'role is incorrect' });
-  }
-
-  let expireTime = req.query.expiry;
-  if (!expireTime || expireTime === '') {
-    expireTime = 3600;
-  } else {
-    expireTime = parseInt(expireTime, 10);
-  }
-
-  const currentTime = Math.floor(Date.now() / 1000);
-  const privilegeExpireTime = currentTime + expireTime;
-
-  let token;
-  if (req.params.tokentype === 'userAccount') {
-    token = RtcTokenBuilder.buildTokenWithAccount(
-      process.env.APP_ID,
-      process.env.APP_CERTIFICATE,
-      channelName,
-      uid,
-      role,
-      privilegeExpireTime
-    );
-  } else if (req.params.tokentype === 'uid') {
-    token = RtcTokenBuilder.buildTokenWithUid(
-      process.env.APP_ID,
-      process.env.APP_CERTIFICATE,
-      channelName,
-      uid,
-      role,
-      privilegeExpireTime
-    );
-  } else {
-    return resp.status(500).json({ error: 'token type is invalid' });
-  }
-
-  return resp.json({ rtcToken: token });
-};
-
-app.get('/rtc/:channel/:role/:tokentype/:uid', nocache, generateRTCToken);
-app.get('', (req, resp) => {
-  resp.json('working port 2');
+app.get('/home', (req, resp) => {
+  models.Movie.find()
+    .then((result) => {
+      resp.json(result);
+      console.log(result + 'from Db');
+    })
+    .catch((err) => console.log(err));
 });
 
-app.listen(process.env.PORT, () => {
-  console.log(`Listenin..g on port: ${process.env.PORT}`);
+app.get('customer/movies/:genre', (req, resp) => {});
+
+app.get('customer/search/movie/:name', (req, resp) => {
+  models.Movie.find({ $text: { $search: 'love' } }).catch((err) =>
+    console.log(err)
+  );
+});
+
+app.get('customer/search/person/:name', (req, resp) => {
+  models.Person.find({ name: req.params.name })
+    .then((result) => {
+      resp.json(result);
+    })
+    .catch((err) => console.log(err));
+});
+
+app.post('customer/bookmovie', (req, resp) => {});
+
+app.post('customer/comment', (req, resp) => {
+  // what movie,by whom,text or ratig?
+  // add it under movie docjment on comment row
+});
+///////////////////////////////////////////////////////////////////////////////////admin
+
+app.post('admin/add/movie', (req, resp) => {});
+
+app.post('admin/edit/movie', (req, resp) => {
+  //delete or update
+});
+
+app.post('admin/add/person', (req, resp) => {});
+
+app.post('admin/edit/person', (req, resp) => {});
+
+app.listen(PORT, () => {
+  console.log(`Listenin...g on port: ${PORT}`);
 });
