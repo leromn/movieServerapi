@@ -4,6 +4,14 @@ const movieSchema = new mongoose.Schema({
   title: String,
   budget: Number,
   releaseDate: Date,
+  avatar: {
+    data: Buffer,
+    contentType: String,
+  },
+  thumbnail: {
+    data: Buffer,
+    contentType: String,
+  },
   revenue: Number,
   status: String,
   runtime: Number,
